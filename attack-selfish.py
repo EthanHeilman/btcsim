@@ -25,6 +25,9 @@ from heapq import *
 
 from btcsim import *
 
+
+w = 10000000000
+
 class BadMiner(Miner):
 	chain_head_others = '*'
 	privateBranchLen = 0
@@ -54,6 +57,7 @@ class BadMiner(Miner):
 				self.privateBranchLen = 0
 			elif delta_prev == 1:
 				self.announce_block(self.chain_head)
+				print self.blocks[self.chain_head].time, self.t, self.t-self.blocks[self.chain_head].time
 			elif delta_prev == 2:
 				self.announce_block(self.chain_head)
 				self.privateBranchLen = 0
@@ -88,10 +92,10 @@ hashrates = hashrates/hashrates.sum()
 
 miners = []
 for i in range(numminers):
-	miners.append(Miner(i, hashrates[i] * 1.0/600.0, 200*1024, seed_block, event_q, t))
+	miners.append(Miner(i, hashrates[i] * 1.0/600.0, 200*1024, seed_block, event_q, t, w))
 
 # make the strong miner a bad miner
-miners[i] = BadMiner(i, hashrates[i] * 1.0/600.0, 200*1024, seed_block, event_q, t)
+miners[i] = BadMiner(i, hashrates[i] * 1.0/600.0, 200*1024, seed_block, event_q, t, w)
 
 
 

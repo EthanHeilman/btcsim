@@ -61,7 +61,7 @@ class Link:
 		return base_t
 
 class Miner:
-	def __init__(self, miner_id, hashrate, verifyrate, seed_block, event_q, t):
+	def __init__(self, miner_id, hashrate, verifyrate, seed_block, event_q, t, w):
 		self.miner_id = miner_id
 		self.hashrate = hashrate
 		self.verifyrate = verifyrate
@@ -79,6 +79,9 @@ class Miner:
 		self.links = []
 		
 		self.add_block(seed_block)
+
+		self.w = w
+		self.last_block_time = 0;
 		
 
 	def mine_block(self):
@@ -88,7 +91,9 @@ class Miner:
 		self.send_event(t_next, self.miner_id, 'block', t_block)
 
 	def verify_block(self, t_block):
-		if (t_block.miner_id == self.miner_id) and (t_block.prev != self.chain_head):
+		#if (t_block.miner_id == 5): return -1
+
+		if (t_block.miner_id == self.miner_id) and (t_block.prev != self.chain_head): #one of ours from the past
 			#print('%02d: block %s is to be ignored (old mining block event from before chain_head changed).' % (self.miner_id, hash(t_block)))
 			return -1
 		if t_block.valid != 1: 
@@ -103,15 +108,37 @@ class Miner:
 		return 1
 
 	def add_block(self, t_block):
+		
+
 		self.blocks[hash(t_block)] = t_block
 		if (self.chain_head == '*'):
 			self.chain_head = hash(t_block)
 			self.mine_block()
+			self.last_block_arrival_time = self.t
 			return
+
 		if (t_block.height > self.blocks[self.chain_head].height):
 			self.chain_head = hash(t_block)
 			self.announce_block(self.chain_head)
 			self.mine_block()
+			self.last_block_arrival_time = self.t
+
+		elif (t_block.height == self.blocks[self.chain_head].height): # Same height so it must be a competing branch block
+			if ( self.t < self.last_block_arrival_time+self.w ): # Did it arrive within the window?
+				# it did! =0
+				if ( t_block.time > self.blocks[self.chain_head].time ):  # is it more recent that current head?
+					print self.blocks[self.chain_head].miner_id
+
+					#self.blocks[self.chain_head] = None
+
+					self.chain_head = hash(t_block)
+					self.announce_block(self.chain_head)
+					self.mine_block()
+					self.last_block_arrival_time = self.t
+
+
+
+			
 
 	def occupy(self, t, t_size):
 		base_t = t
